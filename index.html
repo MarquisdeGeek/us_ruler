@@ -42,6 +42,16 @@ const approximations = [
   { name: "the diameter of %d London Eye", size: 135},
   { name: "the diameter of %d London O2 Dome", size: 365},
   { name: "the height of %d London O2 Dome", size: 52},
+  // Some smaller values, to please the people that try 0.01 :)
+  { name: "the thickness of %d compact disc", size: 0.002},
+  { name: "the thickness of %d SD card", size: 0.002},
+  { name: "the length of %d thumb tack", size: 0.018},
+  { name: "the diameter of %d AAA battery", size: 0.01},
+  { name: "the diameter of %d AA battery", size: 0.014},
+  { name: "the width of %d credit card", size: 0.083},
+  { name: "the height of %d credit card", size: 0.053},
+  { name: "the size of %d paper clip", size: 0.025},
+  
 ];
 
 function getRandom(list) {
@@ -99,7 +109,7 @@ function usSize(size) {
   // Append plural?
   // This is hack - read my book on game polish to find a better method :)
   let pluralReplacement = '';
-  if (closest.number > 1) {
+  if (closest.number !== 1) {
     pluralReplacement = closest.item.plural ? closest.item.plural : "s";
 
     if (itemName.indexOf("%s") == -1) {
