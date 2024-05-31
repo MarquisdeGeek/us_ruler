@@ -1,0 +1,252 @@
+<!doctype html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html;charset=iso-8859-1">
+    <meta name=viewport content="width=device-width, initial-scale=1">
+    <title>Dear United States... please learn the metric system...</title>
+
+<script type="text/javascript">
+<!--
+const DEBUG = false;
+const approximations = [
+  { name: "%d US football pitch", size: 110, plural: "es" },
+  { name: "%d coat hanger", size: 0.43 },
+  { name: "the length of %d Millennium Falcon", size: 34.75 },
+  { name: "the width of %d Millennium Falcon", size: 7.8 },
+  { name: "diameter of %d vinyl album", size: 0.302 },
+  { name: "the length of %d eight-person rowing shell", size: 18.9, singular: "an" },
+  { name: "the length of %d four-person rowing shell", size: 13.4 },
+  { name: "the length of %d two-person rowing shell", size: 10.4 },
+  { name: "the length of %d single-person rowing shell", size: 8.2 },
+  { name: "the height of %d front-loading washing machine", size: 0.85 },
+  { name: "the width of %d 2x4 LEGO brick", size: 0.0318 },
+  { name: "the height of %d Dath Vader Star Wars figure%s from Kenner", size: 0.108 },
+  { name: "the length of %d London double decker bus", size: 11.23, plural: "es" },
+  { name: "the width of %d mod 240 grand piano", size: 1.54 },
+  { name: "the diameter of %d size 5 regulation football", size: 0.22 },
+  { name: "the height of %d regulation bishop%s in FIDE chess", size: 0.07 },
+  { name: "the stopping distance of %d Honda Civic%s, at 30 mph", size: 23 },
+  { name: "the stopping distance of %d Citroen C5 Aircross%s, at 50 mph", size: 53 },
+  { name: "the stopping distance of %d Skoda Octavia%s, at 70 mph", size: 96 },
+  { name: "the length of %d fully-grown female blue whale", size: 23 },
+  { name: "the length of %d typical British bathtub", size: 1.7 },
+  { name: "the length of %d bicycle%s with dropped handlebars", size: 1.75 },
+  { name: "the length of %d medium-size banana", size: 0.17 },
+  { name: "the height of %d Eiffel tower", size: 330},
+  { name: "the height of %d Tesco shopping trolley", size: 1.2},
+  { name: "the widest span of %d London bridge", size: 104},
+  { name: "the span of %d Thames Barrier", size: 520},
+  { name: "the height of %d Golden Gate bridge", size: 227},
+  { name: "the height of %d Spring Temple Buddha statue", size: 129},
+  { name: "the length of %d Monaco Formula One circuit", size: 3337},
+  { name: "the diameter of %d London Eye", size: 135},
+  { name: "the diameter of %d London O2 Dome", size: 365},
+  { name: "the height of %d London O2 Dome", size: 52},
+];
+
+function getRandom(list) {
+  return list[Math.floor(Math.random()*list.length)];
+}
+
+
+function usSize(size) {
+  const closest = findClosestItem(size);
+
+  // Early out in case of bugs in the find routine, or nothing is found. The latter
+  // can happen when the item counts are 0, which indicates a small size value was given.
+  if (typeof closest.item === typeof undefined) {
+    return "It is a tiny thing.";
+  }
+
+  let response = "It is ";
+
+    // Over/under estimated
+    const underTerm = getRandom([ "under", "shorter than" ]);
+    const overTerm  = getRandom([ "over", "longer than" ]);
+    const overOrUnder = closest.estimatedSize > size ? underTerm : overTerm;
+
+    const closenessComment = [
+      { pc: 0.01, msg: `almost exactly`},
+      { pc: 0.02, msg: `very slightly ${overOrUnder}`},
+      { pc: 0.05, msg: `just ${overOrUnder}`},
+      { pc: 0.10, msg: `somewhat ${overOrUnder}`},
+      { pc: 0.20, msg: `about`},
+      { pc: 0.50, msg: `passable close to`},
+      { pc: 100,  msg: `nowhere near`},
+    ];
+
+    // How close?
+    for(let i=0;i<closenessComment.length;++i) {
+      // Pick only the closest one, then exit (which is why I've not used forEach here)
+      if (closest.percentageFit < closenessComment[i].pc) {
+        response += closenessComment[i].msg;
+        break;
+      }
+    }
+    response += " ";
+
+  // Special unary wording
+  let number = closest.number;
+  if (closest.number == 1) {
+    const indefiniteArticle = closest.item.singular ? closest.item.singular : "a";
+    number = getRandom(["one", "a single", indefiniteArticle]);
+  }
+
+  // The unit
+  let itemName = closest.item.name;
+  itemName = itemName.replace("%d", number);
+
+  // Append plural?
+  // This is hack - read my book on game polish to find a better method :)
+  let pluralReplacement = '';
+  if (closest.number > 1) {
+    pluralReplacement = closest.item.plural ? closest.item.plural : "s";
+
+    if (itemName.indexOf("%s") == -1) {
+      itemName = itemName + "%s";
+    }
+  }
+  itemName = itemName.replace("%s", pluralReplacement);
+  response += itemName;
+
+  // Debug:
+  if (DEBUG) {
+    response += ` (est of ${closest.estimatedSize} vs ${size} at %fit = ${closest.percentageFit})`;
+  }
+
+  return response;
+}
+
+
+// The smallest item will invariable "win" with a banal check, since it will
+// always more accurately fit. So we use a heuristic to match:
+ function calcHeuristicScore(thing) {
+  if (thing.items === 0) {
+    return 0;
+  }
+
+  let score = 1;
+
+  // Having a "1-10 of item" is better than a "11-100 of item", so bias for that
+  if (thing.items <= 10) {
+    score += 100;
+  } else if (thing.items <= 20) {
+    score += 50;
+  }
+
+  // Percent fit, so more accurate fits get better scores
+  if (thing.fit < 0.01) {
+    score += 50;
+  } else if (thing.fit < 0.05) {
+    score += 30;
+  } else if (thing.fit < 0.1) {
+    score += 20;
+  }
+
+  // Slight bias for large sized items, because that's impressive (and
+  // avoids/re-balances the 'small objects provide greater accuracy' problem)
+  if (thing.itemSize >= 100) {
+    score += 20;
+  } else if (thing.itemSize >= 10) {
+    score += 10;
+  }
+
+  return score;
+}
+
+
+function findClosestItem(size) {
+  let closest = {};
+  let bestScore = 0;
+
+  approximations.forEach((item) => {
+    const numberOfItemAccurate = size / item.size;
+    const numberOfClosest = Math.floor(numberOfItemAccurate + 0.5);
+    const estimatedSize = numberOfClosest * item.size;
+    const percentageFit = Math.abs(1 - estimatedSize / size);
+
+    const oneOption = {
+      items:     numberOfClosest,
+      itemSize:  item.size,
+      fit:       percentageFit
+    };
+
+    const score = calcHeuristicScore(oneOption);
+
+    if (score > bestScore || (score === bestScore && getRandom([0,1]) === 0)) {
+      bestScore = score;
+      //
+      closest.item = item;
+      closest.percentageFit  = percentageFit;
+      closest.number  = numberOfClosest;
+      closest.estimatedSize = estimatedSize;
+    }
+  });
+
+  return closest;
+}
+
+
+window.onload = function(e){ 
+  const inputField =  document.getElementById('input_distance');
+  const resultField =  document.getElementById('result');
+
+  if (DEBUG) {
+    for(let i=1;i<25;++i) {
+      console.log(usSize(i));
+    }
+  }
+
+  inputField.addEventListener('keydown',(e)=>{
+      if(e.key == 13 || e.key == 'Enter'){
+        const distance = inputField.value;  
+        resultField.innerHTML = usSize(distance);
+        inputField.value = '';
+      }
+  });
+}
+
+//-->
+</script>
+<style type="text/css" media="screen">
+<!--
+* { box-sizing: border-box; }
+body {margin: 0; padding: 0; font-family: Verdana,Geneva,sans-serif;}
+#outer { position: absolute; display: table; width: 100%; height: 99%; margin: 0 auto; }
+#titleblock { display: table-row; width: 100%; height: 10%; max-height: 90px; }
+#upper { display: table-row; width: 100%; height: 45%; }
+#lower { display: table-row; width: 100%; height: 10%; max-height: 90px; }
+#content { position: relative; display: table-cell; vertical-align: middle; text-align: center; }
+#footer { position: relative; display: table-cell; vertical-align: bottom; text-align: center; }
+#title { position: relative; display: table-cell; vertical-align: bottom; text-align: center; font-size: 22pt }
+.big { font-size: 36pt; }
+-->
+</style>
+
+  </head>
+
+  <body bgcolor="#ffffff">
+  <div id="outer">
+    <div id="titleblock">
+      <div id="title">
+            The US Ruler
+      </div>
+    </div>
+    <div id="upper">
+      <div id="content">
+        <span class="big">How long is your thing, in meters? <input type="text" class="big" id="input_distance" size="5">m</span>
+      </div>    
+    </div>
+    <div id="upper">
+      <div id="content">
+        <span class="big" id="result"></span>
+      </div>    
+    </div>
+    <div id="lower">
+      <div id="footer">
+            Send me an update via the <a href="https://github.com/MarquisdeGeek/us_ruler">Github project</a>
+      </div>
+    </div>
+  </div>
+  </body>
+</html>
