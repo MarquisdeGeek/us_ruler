@@ -7,9 +7,9 @@
 
 <script type="text/javascript">
 <!--
-const DEBUG = false;
+const DEBUG = true;
 const approximations = [
-  { name: "the length of %d football gridiron", size: 110, plural: "es" },
+  { name: "the length of %d football gridiron", size: 110 },
   { name: "the size of %d clothes hanger", size: 0.43 },
   { name: "the length of %d Millennium Falcon", size: 34.75 },
   { name: "the width of %d Millennium Falcon", size: 7.8 },
@@ -21,13 +21,13 @@ const approximations = [
   { name: "the height of %d front load washing machine", size: 0.85 },
   { name: "the width of %d 2x4 LEGO brick", size: 0.0318 },
   { name: "the height of %d Darth Vader Star Wars figure%s from Kenner", size: 0.108 },
-  { name: "the length of %d London double decker bus", size: 11.23, plural: "es" },
+  { name: "the length of %d London double decker %s[bus|buses]", size: 11.23 },
   { name: "the width of %d mod 240 grand piano", size: 1.54 },
   { name: "the diameter of %d size 5 regulation soccer ball", size: 0.22 },
   { name: "the height of %d regulation bishop%s in FIDE chess", size: 0.07 },
-  { name: "the stopping distance of %d Honda Civic%s, at 30 mph", size: 23 },
-  { name: "the stopping distance of %d Citroen C5 Aircross%s, at 50 mph", size: 53 },
-  { name: "the stopping distance of %d Skoda Octavia%s, at 70 mph", size: 96 },
+  { name: "%s[|%d times ]the stopping distance of a Honda Civic, at 30 mph", size: 23 },
+  { name: "%s[|%d times ]the stopping distance of a Citroen C5 Aircross, at 50 mph", size: 53 },
+  { name: "%s[|%d times ]the stopping distance of a Skoda Octavia, at 70 mph", size: 96 },
   { name: "the length of %d fully-grown female blue whale", size: 23 },
   { name: "the length of %d typical UK bathtub", size: 1.7 },
   { name: "the length of %d road bike%s", size: 1.75 },
@@ -46,12 +46,16 @@ const approximations = [
   { name: "the thickness of %d compact disc", size: 0.002},
   { name: "the thickness of %d SD card", size: 0.002},
   { name: "the length of %d drawing pin", size: 0.018},
-  { name: "the diameter of %d AAA battery", size: 0.01},
-  { name: "the diameter of %d AA battery", size: 0.014},
+  { name: "the diameter of %d AAA %s[battery|batteries]", size: 0.01},
+  { name: "the diameter of %d AA %s[battery|batteries]", size: 0.014},
   { name: "the width of %d credit card", size: 0.083},
   { name: "the height of %d credit card", size: 0.053},
   { name: "the size of %d paper clip", size: 0.025},
   { name: "the size of %d large tomato", size: 0.10, plural: "es" },
+  // According to the Wentworth classification (1924) 1.024 is the cross-over size between
+  // large and medium-sized boulders. But we name it 'small' to maintain the jok from
+  // https://www.reddit.com/r/comedyheaven/comments/ukqru9/the_size_of_what/
+  { name: "the size of %d large boulder%s, the size of a small boulder", size: 1.024},
 ];
 
 function getRandom(list) {
@@ -108,15 +112,34 @@ function usSize(size) {
 
   // Append plural?
   // This is hack - read my book on game polish to find a better method :)
-  let pluralReplacement = '';
-  if (closest.number !== 1) {
-    pluralReplacement = closest.item.plural ? closest.item.plural : "s";
+  let isPlural = (closest.number !== 1);
+  let pluralDirection = itemName.indexOf("%s");
 
-    if (itemName.indexOf("%s") == -1) {
-      itemName = itemName + "%s";
+  // Plural cases:
+  // 1) Append an 's' to the end, if no plural is specified with %s. e.g. Four book(s)
+  // 2) Replace the %s with an 's', if no [] follow it. e.g. figure(s) from Kenner
+  // 3) Replace the %s[] expression with the correct item from the brackets. e.g. %s[battery|batteries]
+  // In all cases, remember to remove the %s from the target string
+
+  if (pluralDirection === -1) {
+    // 1. No %s present, simply append to end
+    if (isPlural) {
+      itemName = itemName + "s";
     }
+  } else if (itemName.substr(pluralDirection + 2, 1) !== '[') {
+    // 2. A simple replace is enough
+    itemName = itemName.replace("%s", isPlural ? "s" : "");
+  } else {
+    // 3. Replace the whole %s[] block
+    let pluralDirectionStartsAt = pluralDirection+3;
+    let pluralDirectionEndsAt = itemName.indexOf("]");
+    let options = itemName.substr(pluralDirection+3, pluralDirectionEndsAt - pluralDirectionStartsAt);
+    let optionList = options.split('|');
+
+    itemName = itemName.substr(0, pluralDirection) + optionList[isPlural ? 1 : 0] + itemName.substr(pluralDirectionEndsAt + 1);
   }
-  itemName = itemName.replace("%s", pluralReplacement);
+
+  // Append  
   response += itemName;
 
   // Debug:
